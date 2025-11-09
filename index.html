@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>iOS Blog App</title>
 
-  <!-- Font Awesome & Poppins -->
+  <!-- Font & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
@@ -18,8 +18,8 @@
       --card-bg: rgba(255, 255, 255, 0.75);
       --radius: 18px;
       --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-      --blur-bg: rgba(255, 255, 255, 0.5);
-      --blur: blur(15px);
+      --blur-bg: rgba(255, 255, 255, 0.4);
+      --blur: blur(20px);
     }
 
     * { box-sizing: border-box; }
@@ -87,18 +87,8 @@
 
     .post:hover { transform: scale(1.01); }
 
-    .post h2 {
-      margin: 0;
-      font-size: 1.15rem;
-      font-weight: 600;
-    }
-
-    .post small {
-      color: var(--muted);
-      display: block;
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
-    }
+    .post h2 { margin: 0; font-size: 1.15rem; font-weight: 600; }
+    .post small { color: var(--muted); display: block; margin-bottom: 0.5rem; font-size: 0.85rem; }
 
     form {
       display: flex;
@@ -149,7 +139,6 @@
     }
 
     nav button i { font-size: 1.2rem; }
-
     nav button.active { color: var(--primary); font-weight: 600; }
 
     #searchBar {
@@ -162,12 +151,7 @@
     }
 
     .view-title { font-size: 1.3rem; font-weight: 600; }
-
-    .view-content {
-      margin-top: 1rem;
-      line-height: 1.5;
-      font-size: 1.05rem;
-    }
+    .view-content { margin-top: 1rem; line-height: 1.5; font-size: 1.05rem; }
 
     .action-row {
       display: flex;
@@ -180,12 +164,12 @@
     #popupOverlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.35);
       display: none;
       justify-content: center;
       align-items: center;
       z-index: 100;
-      animation: fadeIn 0.3s ease forwards;
+      animation: fadeIn 0.2s ease forwards;
     }
 
     @keyframes fadeIn {
@@ -196,32 +180,22 @@
     #popup {
       width: 90%;
       max-width: 400px;
-      background: rgba(255,255,255,0.75);
+      background: rgba(255,255,255,0.65);
       border-radius: 14px;
       text-align: center;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      backdrop-filter: blur(25px);
       overflow: hidden;
-      backdrop-filter: blur(20px) saturate(180%);
-      transform: scale(0.9);
-      opacity: 0;
-      animation: popIn 0.25s ease forwards;
+      animation: popupIn 0.25s ease;
     }
 
-    @keyframes popIn {
-      to { transform: scale(1); opacity: 1; }
+    @keyframes popupIn {
+      from { transform: scale(0.9) translateY(20px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
     }
 
-    #popup h3 {
-      margin: 20px 0 0;
-      font-weight: 700;
-    }
-
-    #popup p {
-      margin: 15px;
-      padding: 0;
-      color: #333;
-      font-weight: 500;
-    }
+    #popup h3 { margin: 20px 0 0; font-weight: 700; }
+    #popup p { margin: 15px; color: #333; font-weight: 500; }
 
     #popup .button-holder a {
       color: #007AFF;
@@ -231,6 +205,11 @@
       display: block;
       border-top: 1px solid #BABABA;
       cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #popup .button-holder a:hover {
+      background: rgba(0,0,0,0.05);
     }
 
     #popup .two-button a {
@@ -239,10 +218,7 @@
       box-sizing: border-box;
     }
 
-    #popup .two-button a:first-child {
-      border-right: 1px solid #BABABA;
-    }
-
+    #popup .two-button a:first-child { border-right: 1px solid #BABABA; }
     #popup .two-button::after { content: ""; display: block; clear: both; }
 
     @media (max-width: 600px) {
@@ -286,6 +262,7 @@
     <button id="newBtn"><i class="fa-solid fa-plus"></i><span>New</span></button>
   </nav>
 
+  <!-- Animated Popup -->
   <div id="popupOverlay">
     <div id="popup">
       <h3 id="popupTitle">Title</h3>
@@ -294,9 +271,10 @@
     </div>
   </div>
 
+  <!-- Firebase + Firestore Integration -->
   <script type="module">
-    // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
 
     const firebaseConfig = {
@@ -311,39 +289,26 @@
 
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
-  </script>
+    const db = getFirestore(app);
 
-  <script>
-    const pages = { home: homePage, newPost: newPostPage, viewPost: viewPostPage };
-    let posts = JSON.parse(localStorage.getItem('posts')) || [];
-    let currentPostIndex = null;
+    const pages = {
+      home: document.getElementById('homePage'),
+      newPost: document.getElementById('newPostPage'),
+      viewPost: document.getElementById('viewPostPage'),
+    };
 
+    const postsContainer = document.getElementById('postsContainer');
+    const postForm = document.getElementById('postForm');
+    const searchBar = document.getElementById('searchBar');
+    const homeBtn = document.getElementById('homeBtn');
+    const newBtn = document.getElementById('newBtn');
     const popupOverlay = document.getElementById('popupOverlay');
     const popupTitle = document.getElementById('popupTitle');
     const popupMessage = document.getElementById('popupMessage');
     const popupButtons = document.getElementById('popupButtons');
 
-    function showPopup(title, message, buttons = [{ text: "OK" }]) {
-      popupTitle.textContent = title;
-      popupMessage.textContent = message;
-      popupButtons.innerHTML = '';
-      const div = document.createElement('div');
-      div.className = buttons.length === 2 ? 'button-holder two-button' : 'button-holder one-button';
-      buttons.forEach((btn, i) => {
-        const a = document.createElement('a');
-        a.textContent = btn.text;
-        if (btn.action) a.onclick = () => { closePopup(); btn.action(); };
-        else a.onclick = closePopup;
-        if (i === 0 && buttons.length === 2) a.style.borderRight = '1px solid #BABABA';
-        div.appendChild(a);
-      });
-      popupButtons.appendChild(div);
-      popupOverlay.style.display = 'flex';
-    }
-
-    function closePopup() { popupOverlay.style.display = 'none'; }
-
-    popupOverlay.addEventListener('click', e => { if (e.target === popupOverlay) closePopup(); });
+    let posts = [];
+    let currentPostId = null;
 
     function switchPage(page) {
       Object.values(pages).forEach(p => p.classList.add('hidden'));
@@ -353,62 +318,113 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function savePosts() { localStorage.setItem('posts', JSON.stringify(posts)); }
+    async function fetchPosts() {
+      const q = query(collection(db, "posts"), orderBy("date", "desc"));
+      const snapshot = await getDocs(q);
+      posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      displayPosts();
+    }
 
     function displayPosts(filter = '') {
       postsContainer.innerHTML = '';
-      const filtered = posts.filter(p => p.title.toLowerCase().includes(filter.toLowerCase()) || p.content.toLowerCase().includes(filter.toLowerCase()));
-      if (!filtered.length) {
+      const filtered = posts.filter(p =>
+        p.title.toLowerCase().includes(filter.toLowerCase()) ||
+        p.content.toLowerCase().includes(filter.toLowerCase())
+      );
+
+      if (filtered.length === 0) {
         postsContainer.innerHTML = '<p style="text-align:center;color:#999;">No posts found</p>';
         return;
       }
-      filtered.forEach((post, index) => {
+
+      filtered.forEach((post) => {
         const div = document.createElement('div');
         div.className = 'post';
-        div.innerHTML = `<h2>${post.title}</h2><small><i class="fa-regular fa-clock"></i> ${new Date(post.date).toLocaleString()}</small><p>${post.content.slice(0,100)}${post.content.length>100?'...':''}</p>`;
-        div.onclick = () => openPost(index);
+        div.innerHTML = `
+          <h2>${post.title}</h2>
+          <small><i class="fa-regular fa-clock"></i> ${post.date?.toDate ? post.date.toDate().toLocaleString() : new Date().toLocaleString()}</small>
+          <p>${post.content.slice(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
+        `;
+        div.onclick = () => openPost(post.id);
         postsContainer.appendChild(div);
       });
     }
 
-    function openPost(index) {
-      currentPostIndex = index;
-      const post = posts[index];
-      viewPost.innerHTML = `<div class="view-title">${post.title}</div><small><i class="fa-regular fa-clock"></i> ${new Date(post.date).toLocaleString()}</small><div class="view-content">${post.content}</div>`;
+    async function openPost(id) {
+      currentPostId = id;
+      const post = posts.find(p => p.id === id);
+      document.getElementById('viewPost').innerHTML = `
+        <div class="view-title">${post.title}</div>
+        <small><i class="fa-regular fa-clock"></i> ${post.date?.toDate ? post.date.toDate().toLocaleString() : ''}</small>
+        <div class="view-content">${post.content}</div>
+      `;
       switchPage('viewPost');
     }
 
-    postForm.onsubmit = e => {
+    postForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const title = title.value.trim();
-      const content = content.value.trim();
+      const title = document.getElementById('title').value.trim();
+      const content = document.getElementById('content').value.trim();
       if (!title || !content) return;
-      posts.unshift({ title, content, date: new Date().toISOString() });
-      savePosts();
-      postForm.reset();
-      displayPosts();
-      showPopup("Post Published", "Your post has been successfully published!", [{ text: "OK", action: () => switchPage('home') }]);
-    };
 
-    deleteBtn.onclick = () => {
+      await addDoc(collection(db, "posts"), {
+        title, content, date: serverTimestamp()
+      });
+      postForm.reset();
+      showPopup("Post Published", "Your post has been successfully published!", [{ text: "OK", action: fetchPosts }]);
+      switchPage('home');
+    });
+
+    document.getElementById('deleteBtn').onclick = () => {
       showPopup("Delete Post", "Are you sure you want to delete this post?", [
         { text: "Cancel" },
-        { text: "Delete", action: () => { posts.splice(currentPostIndex, 1); savePosts(); displayPosts(); switchPage('home'); } }
+        { text: "Delete", action: async () => {
+          await deleteDoc(doc(db, "posts", currentPostId));
+          fetchPosts();
+          switchPage('home');
+        }}
       ]);
     };
 
-    editBtn.onclick = () => {
-      const post = posts[currentPostIndex];
-      title.value = post.title;
-      content.value = post.content;
-      posts.splice(currentPostIndex, 1);
+    document.getElementById('editBtn').onclick = async () => {
+      const post = posts.find(p => p.id === currentPostId);
+      document.getElementById('title').value = post.title;
+      document.getElementById('content').value = post.content;
+      await deleteDoc(doc(db, "posts", currentPostId));
       switchPage('newPost');
     };
 
     homeBtn.onclick = () => switchPage('home');
     newBtn.onclick = () => switchPage('newPost');
     searchBar.oninput = e => displayPosts(e.target.value);
-    displayPosts();
+
+    function showPopup(title, message, buttons = [{ text: "OK" }]) {
+      popupTitle.textContent = title;
+      popupMessage.textContent = message;
+      popupButtons.innerHTML = '';
+
+      if (buttons.length === 1) {
+        popupButtons.innerHTML = `<div class="button-holder one-button"><a>${buttons[0].text}</a></div>`;
+        popupButtons.querySelector("a").onclick = closePopup;
+      } else if (buttons.length === 2) {
+        const div = document.createElement('div');
+        div.className = 'button-holder two-button';
+        buttons.forEach(btn => {
+          const a = document.createElement('a');
+          a.textContent = btn.text;
+          a.onclick = () => { closePopup(); btn.action && btn.action(); };
+          div.appendChild(a);
+        });
+        popupButtons.appendChild(div);
+      }
+      popupOverlay.style.display = 'flex';
+    }
+
+    function closePopup() { popupOverlay.style.display = 'none'; }
+
+    popupOverlay.addEventListener('click', e => { if (e.target === popupOverlay) closePopup(); });
+
+    fetchPosts();
   </script>
 </body>
 </html>
